@@ -7,7 +7,6 @@ Generate high-quality blog posts in seconds using AI-powered templates and custo
 - Generate full-length blog posts from a title or prompt
 - Multiple templates (listicle, how-to, longform, SEO-optimized, etc.)
 - Customizable tone, length, and target audience
-- Support for images, metadata (title, description, tags), and SEO fields
 - Multi-language support (add prompts for different locales)
 - Simple UI for iterating on generated content and re-generating sections
 - Audit logs and generation history (if using a DB)
@@ -90,3 +89,4 @@ Generate high-quality blog posts in seconds using AI-powered templates and custo
 - Built-in image generation and media library
 - Publish integrations (WordPress, Medium, Ghost)
 - Rate limiting and cost controls for API usage
+
