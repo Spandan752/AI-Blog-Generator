@@ -22,7 +22,7 @@ class GraphBuilder:
     def _add_quality_loop(self, graph: StateGraph, blog_node: BlogNode, next_node: str):
         """Add a loop for quality check and improvement"""
 
-        graph.add_conditional_edge(
+        graph.add_conditional_edges(
             "quality_check",
             blog_node.quality_decision, {
             "revise": "content_generation",       # loop back

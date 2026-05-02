@@ -22,7 +22,7 @@ os.environ['LANGCHAIN_PROJECT'] = 'AI-blog-generator'
 # Schemas
 
 class BlogRequest(BaseModel):
-    topic: str = Field(..., min_length=3, examples='Artificial Intelligence', description='The topic for the blog post')
+    topic: str = Field(..., min_length=3, description='The topic for the blog post')
     language: str = Field(default="", description='Target language for the blog post')
 
 
