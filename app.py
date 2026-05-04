@@ -1,5 +1,5 @@
 import uvicorn
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from contextlib import asynccontextmanager
@@ -24,6 +24,7 @@ os.environ['LANGCHAIN_PROJECT'] = 'AI-blog-generator'
 class BlogRequest(BaseModel):
     topic: str = Field(..., min_length=3, description='The topic for the blog post')
     language: str = Field(default="", description='Target language for the blog post')
+    tone:str = Field(default="professional", description='Tone of the blog post. Supported values: professional, casual, academic, humorous')
 
 
 class BlogResponse(BaseModel):
@@ -31,6 +32,7 @@ class BlogResponse(BaseModel):
     outline: str
     content: str
     language: str
+    tone: str
     quality_score: int
     revision_count: int
 
@@ -67,6 +69,11 @@ async def create_blogs(request: BlogRequest):
     Runs the full agentic pipeline:
     title -> outline -> content -> quality_check (loop if needed) ->[translation]
     """
+
+    SUPPORTED_TONES = {"professional", "casual", "academic", "humorous"}
+    if request.tone.lower() not in SUPPORTED_TONES:
+        raise HTTPException(status_code=400, detail=f"Unsupported tone '{request.tone}'. Supported tones are: {', '.join(SUPPORTED_TONES)}")
+
     try:
         usecase = 'language' if request.language.strip() else 'topic'
         graph = graph_builder.setup_graph(usecase=usecase)
@@ -74,6 +81,7 @@ async def create_blogs(request: BlogRequest):
         initial_state = {
             "topic": request.topic,
             "current_language": request.language.strip().lower(),
+            "tone": request.tone.lower(),
             "revision_count": 0,
             "quality_score": 0,
             "quality_feedback": ""
@@ -89,6 +97,7 @@ async def create_blogs(request: BlogRequest):
             language=state.get("current_language", "english"),
             quality_score=state.get("quality_score", 0),
             revision_count=state.get("revision_count", 0),
+            tone=state.get("tone", "professional"),
         )
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve))
@@ -100,6 +109,13 @@ async def create_blogs(request: BlogRequest):
 async def create_blog_stream(request: BlogRequest):
     """Stream blog generation events as they happen through the graph.
     """
+
+    SUPPORTED_TONES = {"professional", "casual", "academic", "humorous"}
+    if request.tone.lower() not in SUPPORTED_TONES:
+        raise HTTPException(status_code=400, detail=f"Unsupported tone '{request.tone}'. Supported tones are: {', '.join(SUPPORTED_TONES)}")
+
+
+
     try:
         usecase = "language" if request.language.strip() else "topic"
         graph = graph_builder.setup_graph(usecase=usecase)
@@ -110,6 +126,7 @@ async def create_blog_stream(request: BlogRequest):
             "revision_count": 0,
             "quality_score": 0,
             "quality_feedback": "",
+            "tone": request.tone.lower()
         }
 
         def event_stream():

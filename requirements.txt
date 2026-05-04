@@ -10,3 +10,4 @@ langgraph-cli[inmem]
 python-dotenv
 pydantic
 langsmith
+streamlit

@@ -7,8 +7,7 @@ from src.nodes.blog_node import BlogNode
 class GraphBuilder:
     def __init__(self, llm):
         self.llm = llm
-        # self.graph = StateGraph(BlogState)   #remove this
-
+        
 
     def _add_common_nodes(self, graph: StateGraph, blog_node: BlogNode):
         """Add common nodes to the graph"""

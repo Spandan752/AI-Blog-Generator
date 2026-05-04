@@ -1,26 +1,26 @@
-from src.state.blog_state import BlogState
-from langchain_core.messages import SystemMessage, HumanMessage
+from src.state.blog_state import BlogState, Blog, TONE_INSTRUCTIONS
+from langchain_core.messages import HumanMessage
 from src.state.blog_state import Blog, BlogState
 
 class BlogNode:
     def __init__(self, llm):
         self.llm = llm
 
-    def title_creation(self, state:BlogState) -> dict:
-        # if "topic" in state and state['topic']:
-        #     prompt = """
-        #             You are an expert Blog writer. Use markdown formatting and generate a blog title for {topic}. This title should be creative and SEO friendly.
-        #             """
-        #     system_message = prompt.format(topic=state['topic'])
-        #     response = self.llm.invoke(system_message)
-        #     return {'blog': {'title': response.content}}
+    def _get_tone_instruction(self, state:BlogState) -> str:
+        tone = state.get("tone", "professional").lower()
+        return TONE_INSTRUCTIONS.get(tone, TONE_INSTRUCTIONS["professional"])
 
+
+    def title_creation(self, state:BlogState) -> dict:
+        tone_instructions = self._get_tone_instruction(state)
+        
         prompt = (
-            "You are an expert blog writer. Generate a single creative, "
-            "SEO-friendly blog title for the following topic.\n\n"
+            "You are an expert blog writer.\n\n"
+            "Tone instruction: {tone_instruction}\n\n"
+            "Generate a single creative, SEO-friendly blog title for the following topic.\n\n"
             "Topic: {topic}\n\n"
             "Return only the title — no explanation, no quotes, no markdown."
-        ).format(topic=state['topic'])
+        ).format(topic=state['topic'], tone_instruction = tone_instructions)
 
         response = self.llm.invoke(prompt)
 
@@ -32,18 +32,21 @@ class BlogNode:
         
 
     def outline_generation(self, state:BlogState) -> dict:
+        tone_instructions = self._get_tone_instruction(state)
+
         if 'topic' in state and state['topic']:
-            prompt =(
-                "You are an expert blog writer. Create a detailed, structured outline "
-                "for a blog post with the following title.\n\n"
-                "Title: {title}\n"
-                "Topic: {topic}\n\n"
-                "The outline should include:\n"
-                "- An introduction section\n"
-                "- 4-6 main sections with descriptive headings\n"
-                "- A conclusion section\n\n"
-                "Use markdown formatting (## for headings). Return only the outline."
-            ).format(title=state['blog'].title, topic=state['topic'])
+            prompt = (
+            "You are an expert blog writer.\n\n"
+            "Tone instruction: {tone_instruction}\n\n"
+            "Create a detailed, structured outline for a blog post with the following title.\n\n"
+            "Title: {title}\n"
+            "Topic: {topic}\n\n"
+            "The outline should include:\n"
+            "- An introduction section\n"
+            "- 4-6 main sections with descriptive headings\n"
+            "- A conclusion section\n\n"
+            "Use markdown formatting (## for headings). Return only the outline."
+            ).format(title=state['blog'].title, topic=state['topic'], tone_instruction = tone_instructions)
 
             response = self.llm.invoke(prompt)
             updated_blog = Blog(
@@ -55,10 +58,11 @@ class BlogNode:
 
 
     def content_generation(self, state:BlogState) -> dict:
+        tone_instructions = self._get_tone_instruction(state)
 
         feedback_section = ""
 
-        if state['quality_feedback']:
+        if state.get("quality_feedback"):
             feedback_section = (
                 "\n\nIMPORTANT — This is a revision. Your previous attempt scored "
                 f"{state.get('quality_score', 0)}/10. Feedback:\n"
@@ -67,18 +71,20 @@ class BlogNode:
             )
 
         prompt = (
-            "You are an expert blog writer. Write a detailed, engaging blog post "
-            "using the title and outline below. Use markdown formatting.\n\n"
+            "You are an expert blog writer.\n\n"
+            "Tone instruction: {tone_instruction}\n\n"
+            "Write a detailed, engaging blog post using the title and outline below. "
+            "Use markdown formatting.\n\n"
             "Title: {title}\n\n"
             "Outline to follow:\n{outline}\n"
             "{feedback}"
             "\nRequirements:\n"
             "- Minimum 600 words\n"
             "- Use ## and ### headings from the outline\n"
-            "- Write in a clear, engaging style\n"
+            "- Strictly follow the tone instruction above throughout the entire post\n"
             "- Include a strong introduction and conclusion\n"
             "- No filler phrases like 'In this blog post we will...'"
-        ).format(title=state['blog'].title, outline=state['blog'].outline, feedback = feedback_section)
+        ).format(title=state['blog'].title, outline=state['blog'].outline, feedback = feedback_section, tone_instruction = tone_instructions)
 
         response = self.llm.invoke(prompt)
         updated_blog = Blog(
@@ -89,28 +95,24 @@ class BlogNode:
 
         return {'blog': updated_blog}
 
-        # if 'topic' in state and state['topic']:
-        #     prompt = """
-        #             You are an expert Blog writer. Use markdown formatting and generate a detailed blog content for {topic}.
-        #              """
-        #     system_message = prompt.format(topic=state['topic'])
-        #     response = self.llm.invoke(system_message)
-        #     return {'blog': {'title': state['blog']['title'], 'content': response.content}}
 
-    def quality_check(self, state:BlogState):
+    def quality_check(self, state:BlogState) -> dict:
+        tone = state.get("tone", "professional")
+
         prompt = (
             "You are a senior editor reviewing a blog post. Evaluate the following "
             "blog and provide a quality score from 0-10 and specific feedback.\n\n"
             "Title: {title}\n\n"
             "Content:\n{content}\n\n"
+            "Expected tone: {tone}\n\n"
             "Score criteria:\n"
-            "- 8-10: Excellent — detailed, well-structured, engaging, 600+ words\n"
-            "- 5-7: Acceptable — decent but missing depth, structure, or length\n"
-            "- 0-4: Poor — too short, off-topic, poorly structured, or generic\n\n"
+            "- 8-10: Excellent — detailed, well-structured, engaging, 600+ words, matches expected tone\n"
+            "- 5-7: Acceptable — decent but missing depth, structure, length, or tone consistency\n"
+            "- 0-4: Poor — too short, off-topic, poorly structured, generic, or wrong tone\n\n"
             "Respond in EXACTLY this format (no extra text):\n"
             "SCORE: <number 0-10>\n"
             "FEEDBACK: <one paragraph of specific, actionable feedback>"
-        ).format(title=state['blog'].title, content = state['blog'].content)
+        ).format(title=state['blog'].title, content = state['blog'].content, tone= tone)
 
         response = self.llm.invoke(prompt)
         lines = response.content.strip().splitlines()
