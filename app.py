@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 import json
 import os
 from dotenv import load_dotenv
+from fastapi.middleware.cors import CORSMiddleware
 
 from src.graphs.graph_builder import GraphBuilder
 from src.LLMs.groqllm import GroqLLM
@@ -14,7 +15,7 @@ load_dotenv()
 
 app = FastAPI()
 
-os.environ['LANGSMITH_API_KEY'] = os.getenv('LANGCHAIN_API_KEY')
+os.environ['LANGSMITH_API_KEY'] = os.getenv('LANGCHAIN_API_KEY', '')
 os.environ['LANGCHAIN_TRACING_V2'] = 'true'
 os.environ['LANGCHAIN_PROJECT'] = 'AI-blog-generator'
 
@@ -52,6 +53,15 @@ app = FastAPI(
     description="An API to generate blog posts using AI based on a given topic and language.",
     version="1.0.0",
     lifespan=lifespan
+)
+
+# CORS middleware to allow requests from Streamlit app
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
