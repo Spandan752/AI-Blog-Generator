@@ -167,7 +167,7 @@ if generate_btn:
     st.download_button(
         label = "Download",
         data = f"# {blog_data['title']}\n\n{blog_data['content']}",
-        file_name = f"{blog_data['title'].replace(' ', '_')}.pdf",
+        file_name = f"{blog_data['title'].replace(' ', '_')}.txt",
         mime = "text/markdown",
         icon=":material/download:"
     )
