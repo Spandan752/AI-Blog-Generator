@@ -5,9 +5,7 @@ langchain_core
 langchain_groq
 fastapi
 uvicorn
-watchdog
-langgraph-cli[inmem]
 python-dotenv
 pydantic
 langsmith
-streamlit
+httpx
