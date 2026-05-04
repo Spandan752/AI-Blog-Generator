@@ -173,6 +173,6 @@ if generate_btn:
     )
 
 else:
-    st.info("Enter a blog topic and click 'Generate' to create your AI-generated blog post.")
+    st.info("Enter a blog topic and click 'Generate' to create your AI-generated blog post.\n Loading it for the first time might take around 30 seconds to spin up the API server.")
 
             
